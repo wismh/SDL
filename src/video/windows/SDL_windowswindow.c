@@ -1509,16 +1509,7 @@ void WIN_DestroyWindow(SDL_VideoDevice *_this, SDL_Window *window)
 #if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
 void WIN_OnWindowEnter(SDL_VideoDevice *_this, SDL_Window *window)
 {
-    SDL_WindowData *data = window->internal;
-
-    if (!data || !data->hwnd) {
-        // The window wasn't fully initialized
-        return;
-    }
-
-    if (window->flags & SDL_WINDOW_ALWAYS_ON_TOP) {
-        WIN_SetWindowPositionInternal(window, data->copybits_flag | SWP_NOSIZE | SWP_NOACTIVATE, SDL_WINDOWRECT_CURRENT);
-    }
+    /* Do not restack or alter Z-order of topmost or owned windows on mouse hover. */
 }
 
 static BOOL GetClientScreenRect(HWND hwnd, RECT *rect)
@@ -2320,6 +2311,11 @@ bool WIN_SetWindowParent(SDL_VideoDevice *_this, SDL_Window *window, SDL_Window 
          * https://devblogs.microsoft.com/oldnewthing/20100315-00/?p=14613
          */
         SetWindowLongPtr(child_data->hwnd, GWLP_HWNDPARENT, parent_hwnd);
+        SetWindowPos(child_data->hwnd, NULL, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+        if (window->flags & SDL_WINDOW_ALWAYS_ON_TOP) {
+            WIN_SetWindowAlwaysOnTop(_this, window, true);
+        }
     } else {
         SetParent(child_data->hwnd, (HWND)parent_hwnd);
     }
