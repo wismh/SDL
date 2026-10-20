@@ -799,8 +799,23 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             return;
         }
 
-        // Check so we don't register the same callback twice.
-        if (enabled == mBackKeyTrapEnabled) {
+        // The hint callback runs on the SDL thread. registerOnBackInvokedCallback
+        // is main-thread only; calling it here throws and the system keeps finishing
+        // the activity on Back.
+        final Activity activity = mSingleton;
+        if (activity == null) {
+            return;
+        }
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                applyBackButtonTrapEnabled(enabled);
+            }
+        });
+    }
+
+    private static void applyBackButtonTrapEnabled(boolean enabled) {
+        if (mSingleton == null || enabled == mBackKeyTrapEnabled) {
             return;
         }
 
